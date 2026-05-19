@@ -78,6 +78,7 @@ jobs:
             if [ -d "repo" ]; then
                 echo repo folder exists, so pull changes
                 cd repo
+                git remote set-url origin https://github.com/daraymonsta/test-cicd-github-ttt-app-simple.git
                 git pull origin main
             else
                 echo repo folder does not exist, so clone repo
