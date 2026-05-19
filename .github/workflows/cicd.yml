@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+
+env:
+  REPO: ${{ github.repository }}
+  REPO_URL: https://github.com/${{ github.repository }}.git
+
 jobs:
   test:
     name: Install and test
@@ -78,14 +83,14 @@ jobs:
             if [ -d "repo" ]; then
                 echo repo folder exists, so remove and clone repo
                 rm -rf repo
-                git clone $REPO repo
+                git clone $REPO_URL repo
                 cd repo
                 #complicated to git pull as multiple repos' pipelines may run the app on the same deployment server
-                #git remote set-url origin $REPO
+                #git remote set-url origin $REPO_URL
                 #git pull origin main
             else
                 echo repo folder does not exist, so clone repo
-                git clone $REPO repo
+                git clone $REPO_URL repo
                 cd repo
             fi
             cd app
