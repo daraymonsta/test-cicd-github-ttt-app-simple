@@ -1,0 +1,67 @@
+name: CICD - Test, Merge and Deploy to EC2
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Install and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run tests
+        working-directory: app
+        run: npm test
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.TTT_APP_EC2_HOST }}
+          username: ${{ secrets.TTT_APP_EC2_USER }}
+          key: ${{ secrets.TTT_APP_EC2_SSH_KEY }}
+          script: |
+            echo stop and remove any container that is currently running on port 3000
+            docker ps -q --filter "publish=3000" | xargs -r docker rm -f
+            
+            if [ -d "repo" ]; then
+                echo repo folder exists, so pull changes
+                cd repo
+                git pull origin main
+            else
+                echo repo folder does not exist, so clone repo
+                git clone https://github.com/daraymonsta/test-cicd-github-ttt-app-simple repo
+                cd repo
+            fi
+            cd app
+            npm ci --omit=dev
+            pm2 restart ttt-app || pm2 start npm --name ttt-app -- start
+
+            echo configure pm2 to start on system boot
+            pm2 save
+            sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u ${{ secrets.TTT_APP_EC2_USER }} --hp /home/${{ secrets.TTT_APP_EC2_USER }}
+            
