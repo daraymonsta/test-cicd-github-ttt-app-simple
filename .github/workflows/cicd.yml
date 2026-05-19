@@ -76,10 +76,13 @@ jobs:
             docker ps -q --filter "publish=3000" | xargs -r docker rm -f
             
             if [ -d "repo" ]; then
-                echo repo folder exists, so pull changes
+                echo repo folder exists, so remove and clone repo
+                rm -rf repo
+                git clone https://github.com/daraymonsta/test-cicd-github-ttt-app-simple repo
                 cd repo
-                git remote set-url origin https://github.com/daraymonsta/test-cicd-github-ttt-app-simple.git
-                git pull origin main
+                #complicated to git pull as multiple repos' pipelines may run the app on the same deployment server
+                #git remote set-url origin https://github.com/daraymonsta/test-cicd-github-ttt-app-simple.git
+                #git pull origin main
             else
                 echo repo folder does not exist, so clone repo
                 git clone https://github.com/daraymonsta/test-cicd-github-ttt-app-simple repo
